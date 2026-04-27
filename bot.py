@@ -108,7 +108,12 @@ async def check_birthdays(context: ContextTypes.DEFAULT_TYPE):
 
 # ------------------ Запуск ------------------
 
-async def main():
+from telegram.ext import ApplicationBuilder, CommandHandler
+import os
+
+TOKEN = os.getenv("TOKEN")
+
+def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -116,16 +121,8 @@ async def main():
     app.add_handler(CommandHandler("list", list_birthdays))
     app.add_handler(CommandHandler("delete", delete))
 
-    # ежедневная проверка
-    app.job_queue.run_daily(
-        check_birthdays,
-        time=datetime.now().time(),
-        chat_id=123456789  # ВСТАВЬ СВОЙ CHAT_ID
-    )
-
     print("Бот запущен...")
-    await app.run_polling()
+    app.run_polling()
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
