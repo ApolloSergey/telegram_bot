@@ -4,6 +4,7 @@ import os
 import threading
 import time
 import requests
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from datetime import datetime
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -30,6 +31,15 @@ def keep_alive():
 
 # запускаем поток
 threading.Thread(target=keep_alive, daemon=True).start()
+
+
+# ------------------ мини HTTP сервер ------------------
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+
+    server = HTTPServer(("0.0.0.0", port), BaseHTTPRequestHandler)
+    print(f"Web server running on {port}")
+    server.serve_forever()
 
 # ------------------ Работа с файлом ------------------
 
@@ -127,6 +137,7 @@ async def check_birthdays(context: ContextTypes.DEFAULT_TYPE):
 # ------------------ ЗАПУСК ------------------
 
 def main():
+    threading.Thread(target=run_web, daemon=True).start()
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
