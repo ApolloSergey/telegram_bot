@@ -4,7 +4,7 @@ from datetime import datetime
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-TOKEN = "ТВОЙ_ТОКЕН"
+TOKEN = os.getenv("TOKEN")
 FILE = "birthdays.json"
 
 logging.basicConfig(level=logging.INFO)
