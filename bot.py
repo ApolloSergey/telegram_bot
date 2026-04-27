@@ -1,6 +1,9 @@
 import json
 import logging
 import os
+import threading
+import time
+import requests
 from datetime import datetime
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -8,7 +11,25 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 TOKEN = os.getenv("TOKEN")
 FILE = "birthdays.json"
 
+# 🔥 ВСТАВЬ СЮДА URL ТВОЕГО RENDER СЕРВИСА
+KEEP_ALIVE_URL = "https://google.com"
+
 logging.basicConfig(level=logging.INFO)
+
+# ------------------ KEEP ALIVE ------------------
+
+def keep_alive():
+    while True:
+        try:
+            requests.get(KEEP_ALIVE_URL)
+            print("Ping server...")
+        except Exception as e:
+            print("Ping error:", e)
+
+        time.sleep(600)  # каждые 10 минут
+
+# запускаем поток
+threading.Thread(target=keep_alive, daemon=True).start()
 
 # ------------------ Работа с файлом ------------------
 
@@ -33,13 +54,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/delete Имя"
     )
 
-# ➕ Добавить
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         name = context.args[0]
         date = context.args[1]
 
-        # проверка формата
         datetime.strptime(date, "%d-%m")
 
         data = load_data()
@@ -51,7 +70,6 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text("❌ Используй: /add Имя ДД-ММ")
 
-# 📋 Список
 async def list_birthdays(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
 
@@ -65,7 +83,6 @@ async def list_birthdays(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(text)
 
-# ❌ Удалить
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         name = context.args[0]
@@ -82,7 +99,8 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text("❌ Используй: /delete Имя")
 
-# 🎉 Проверка дней рождения
+# ------------------ Проверка дней рождения ------------------
+
 async def check_birthdays(context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     today = datetime.now().strftime("%d-%m")
@@ -106,12 +124,7 @@ async def check_birthdays(context: ContextTypes.DEFAULT_TYPE):
                 text=message
             )
 
-# ------------------ Запуск ------------------
-
-from telegram.ext import ApplicationBuilder, CommandHandler
-import os
-
-TOKEN = os.getenv("TOKEN")
+# ------------------ ЗАПУСК ------------------
 
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
@@ -121,7 +134,7 @@ def main():
     app.add_handler(CommandHandler("list", list_birthdays))
     app.add_handler(CommandHandler("delete", delete))
 
-    print("Бот запущен...")
+    print("Bot is running...")
     app.run_polling()
 
 if __name__ == "__main__":
