@@ -3,8 +3,10 @@ import logging
 import os
 import threading
 import time
+import pytz
 import requests
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from datetime import time
 from datetime import datetime
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -12,7 +14,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 TOKEN = os.getenv("TOKEN")
 FILE = "birthdays.json"
 
-# 🔥 ВСТАВЬ СЮДА URL ТВОЕГО RENDER СЕРВИСА
+# 🔥 ТВОЙ URL (у тебя уже правильный)
 KEEP_ALIVE_URL = "https://telegram-bot-y750.onrender.com"
 
 logging.basicConfig(level=logging.INFO)
@@ -29,15 +31,22 @@ def keep_alive():
 
         time.sleep(600)  # каждые 10 минут
 
-# запускаем поток
-threading.Thread(target=keep_alive, daemon=True).start()
+# ------------------ HTTP сервер (ИСПРАВЛЕН) ------------------
 
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"OK")
 
-# ------------------ мини HTTP сервер ------------------
+    # убираем спам логов
+    def log_message(self, format, *args):
+        return
+
 def run_web():
     port = int(os.environ.get("PORT", 10000))
-
-    server = HTTPServer(("0.0.0.0", port), BaseHTTPRequestHandler)
+    server = HTTPServer(("0.0.0.0", port), Handler)
     print(f"Web server running on {port}")
     server.serve_forever()
 
@@ -138,6 +147,8 @@ async def check_birthdays(context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     threading.Thread(target=run_web, daemon=True).start()
+    threading.Thread(target=keep_alive, daemon=True).start()
+
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -145,6 +156,13 @@ def main():
     app.add_handler(CommandHandler("list", list_birthdays))
     app.add_handler(CommandHandler("delete", delete))
 
+    # ⏰ запуск каждый день в 12:00
+    
+    app.job_queue.run_daily(
+    check_birthdays,
+    time=time(hour=12, minute=0, tzinfo=pytz.timezone("Europe/Luxembourg")),
+    chat_id=123456789
+    )
     print("Bot is running...")
     app.run_polling()
 
