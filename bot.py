@@ -13,7 +13,7 @@ TOKEN = os.getenv("TOKEN")
 FILE = "birthdays.json"
 
 # 🔥 ВСТАВЬ СЮДА URL ТВОЕГО RENDER СЕРВИСА
-KEEP_ALIVE_URL = "https://google.com"
+KEEP_ALIVE_URL = "https://telegram-bot-y750.onrender.com"
 
 logging.basicConfig(level=logging.INFO)
 
